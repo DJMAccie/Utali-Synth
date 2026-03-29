@@ -1,0 +1,6 @@
+Builds/
+build/
+*.txt
+.vs/
+*.user
+JuceLibraryCode/
