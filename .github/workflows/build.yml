@@ -13,16 +13,18 @@ permissions:
 
 jobs:
   build:
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
+          - name: macOS
+            os: macos-latest
             artifact_name: UTALI-UtaliSynth-macOS
             zip_name: UTALI-UtaliSynth-macOS.zip
-          - os: windows-latest
+          - name: Windows
+            os: windows-2022
             artifact_name: UTALI-UtaliSynth-Windows
             zip_name: UTALI-UtaliSynth-Windows.zip
 
@@ -33,12 +35,6 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Setup Ninja (Windows)
-        if: runner.os == 'Windows'
-        uses: ashutoshvarma/setup-ninja@master
-        with:
-          version: 1.11.1
-
       - name: Configure CMake (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -47,7 +43,7 @@ jobs:
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
         run: |
-          cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+          cmake -B build -A x64
 
       - name: Build Project
         run: |
