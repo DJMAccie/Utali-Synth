@@ -102,6 +102,20 @@ target_link_libraries(UTALISYNTH PRIVATE
 
 juce_generate_juce_header(UTALISYNTH)
 
+# Automatically deploy VST3 to Documents/Plugins for Ableton Live on local builds
+if(APPLE AND NOT DEFINED ENV{CI})
+    set(USER_DOCS_PLUGINS "/Users/user/Documents/Plugins")
+    if(EXISTS "${USER_DOCS_PLUGINS}")
+        add_custom_command(TARGET UTALISYNTH_VST3 POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E rm -rf "${USER_DOCS_PLUGINS}/UTALISYNTH.vst3"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "$<TARGET_BUNDLE_DIR:UTALISYNTH_VST3>"
+                "${USER_DOCS_PLUGINS}/UTALISYNTH.vst3"
+            COMMENT "Deploying VST3 to ${USER_DOCS_PLUGINS}/UTALISYNTH.vst3 for Ableton Live"
+        )
+    endif()
+endif()
+
 # Verification Test Console App
 juce_add_console_app(UtaliSynthTests
     PRODUCT_NAME "UtaliSynthTests"
