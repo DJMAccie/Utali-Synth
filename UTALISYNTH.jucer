@@ -5,8 +5,7 @@
               companyName="UTALI" companyWebsite="petyabouianov.com" pluginFormats="buildVST3">
   <MAINGROUP id="bdjpgz" name="UTALISYNTH">
     <GROUP id="{86042B18-D281-67E1-F8AB-29F0861ABBE2}" name="Source">
-      <FILE id="CouGGc" name="JuliaChorus.h" compile="0" resource="0" file="Source/JuliaChorus.h"/>
-      <FILE id="yDlzqo" name="JuliaChorus.cpp" compile="1" resource="0" file="Source/JuliaChorus.cpp"/>
+      <FILE id="A1B2C3" name="ADAAProcessor.h" compile="0" resource="0" file="Source/ADAAProcessor.h"/>
       <FILE id="YwossD" name="SynthVoice.cpp" compile="1" resource="0" file="Source/SynthVoice.cpp"/>
       <FILE id="O7Lezb" name="SynthVoice.h" compile="0" resource="0" file="Source/SynthVoice.h"/>
       <FILE id="mRs8A9" name="PluginProcessor.cpp" compile="1" resource="0"
@@ -16,6 +15,14 @@
       <FILE id="NdnIZT" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="wxK9Y4" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+    </GROUP>
+    <GROUP id="{9F8E7D6C-5B4A-3210-FEDC-BA9876543210}" name="Assets">
+      <FILE id="KnobSm" name="hise_knob_small.png" compile="0" resource="1" file="Assets/hise_knob_small.png"/>
+      <FILE id="KnobMed" name="hise_Knob_medium.png" compile="0" resource="1" file="Assets/hise_Knob_medium.png"/>
+      <FILE id="KnobBig" name="hise_knob_big.png" compile="0" resource="1" file="Assets/hise_knob_big.png"/>
+      <FILE id="Bg1" name="met zelfde witte achtergrond 1.png" compile="0" resource="1" file="Assets/met zelfde witte achtergrond 1.png"/>
+      <FILE id="Bg3" name="met zelfde witte achtergrond 3.png" compile="0" resource="1" file="Assets/met zelfde witte achtergrond 3.png"/>
+      <FILE id="BgIllu" name="vintage_illustrated_panel.png" compile="0" resource="1" file="Assets/vintage_illustrated_panel.png"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

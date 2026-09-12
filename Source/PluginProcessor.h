@@ -1,7 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
 #include "SynthVoice.h"
-#include "JuliaChorus.h"
 #include "ADAAProcessor.h"
 
 class UTALISYNTHAudioProcessor : public juce::AudioProcessor {
@@ -30,19 +29,38 @@ public:
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 
     juce::AudioProcessorValueTreeState apvts;
-    juce::AudioProcessorValueTreeState::ParameterLayout createParams();
     juce::MidiKeyboardState keyboardState;
 
 private:
     static constexpr int MAX_VOICES = 8;
+    static constexpr int CURRENT_STATE_VERSION = 1;
+
+    juce::AudioProcessorValueTreeState::ParameterLayout createParams();
 
     juce::Synthesiser mySynth;
-    JuliaChorus juliaChorus;
+    std::array<SynthVoice*, MAX_VOICES> voices{};
+    juce::dsp::Chorus<float> chorus;
+
+    struct ParameterPointers {
+        std::atomic<float>* tone = nullptr;
+        std::atomic<float>* reso = nullptr;
+        std::atomic<float>* age = nullptr;
+        std::atomic<float>* wave = nullptr;
+        std::atomic<float>* lag = nullptr;
+        std::atomic<float>* wobble = nullptr;
+        std::atomic<float>* mix = nullptr;
+        std::atomic<float>* attack = nullptr;
+        std::atomic<float>* decay = nullptr;
+        std::atomic<float>* sustain = nullptr;
+        std::atomic<float>* release = nullptr;
+        std::atomic<float>* sub = nullptr;
+        std::atomic<float>* drive = nullptr;
+        std::atomic<float>* unison = nullptr;
+    } params;
 
     juce::SmoothedValue<float> smoothedDrive;
-    juce::SmoothedValue<float> smoothedLag, smoothedWobble, smoothedMix;
     juce::dsp::FirstOrderTPTFilter<float> dcBlocker;
-    std::array<ADAAProcessor, 2> adaaProcessors;  // Per-channel ADAA state
+    std::array<ADAAProcessor, 2> adaaProcessors;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(UTALISYNTHAudioProcessor)
 };
