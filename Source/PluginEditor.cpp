@@ -85,9 +85,11 @@ void UTALISYNTHAudioProcessorEditor::paint(juce::Graphics& g) {
     const int panelH = juce::roundToInt(231.0f * scale);
     const auto cream = utali::UtaliLookAndFeel::getCreamColour();
 
-    // 1. Draw illustrated vintage backpanel
+    // 1. Draw illustrated vintage backpanel with high resampling quality
+    g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+
     if (background.isValid()) {
-        g.drawImage(background, 0, 0, getWidth(), panelH, 0, 0, 1024, 231);
+        g.drawImage(background, 0, 0, getWidth(), panelH, 0, 0, background.getWidth(), background.getHeight());
     } else {
         g.fillAll(juce::Colour(0xffB4AAA0)); // Fallback warm beige
     }
