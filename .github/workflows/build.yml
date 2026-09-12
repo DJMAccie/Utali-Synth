@@ -1,0 +1,138 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact_name: UTALI-UtaliSynth-macOS
+            zip_name: UTALI-UtaliSynth-macOS.zip
+          - os: windows-latest
+            artifact_name: UTALI-UtaliSynth-Windows
+            zip_name: UTALI-UtaliSynth-Windows.zip
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Ninja (Windows)
+        if: runner.os == 'Windows'
+        uses: ashutoshvarma/setup-ninja@master
+        with:
+          version: 1.11.1
+
+      - name: Configure CMake (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Project
+        run: |
+          cmake --build build --config Release --parallel
+
+      - name: Run Verification Tests (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          if [ -f "./build/UtaliSynthTests_artefacts/Release/UtaliSynthTests" ]; then
+            ./build/UtaliSynthTests_artefacts/Release/UtaliSynthTests
+          else
+            ./build/UtaliSynthTests_artefacts/UtaliSynthTests
+          fi
+
+      - name: Run Verification Tests (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          if (Test-Path "build\UtaliSynthTests_artefacts\Release\UtaliSynthTests.exe") {
+            .\build\UtaliSynthTests_artefacts\Release\UtaliSynthTests.exe
+          } else {
+            .\build\UtaliSynthTests_artefacts\UtaliSynthTests.exe
+          }
+
+      - name: Stage Release Artifacts (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p staging
+          for fmt in VST3/UTALISYNTH.vst3 AU/UTALISYNTH.component Standalone/UTALISYNTH.app; do
+            if [ -d "build/UTALISYNTH_artefacts/Release/$fmt" ]; then
+              cp -R "build/UTALISYNTH_artefacts/Release/$fmt" staging/
+            elif [ -d "build/UTALISYNTH_artefacts/$fmt" ]; then
+              cp -R "build/UTALISYNTH_artefacts/$fmt" staging/
+            fi
+          done
+          cd staging && zip -r -y ../${{ matrix.zip_name }} . && cd ..
+
+      - name: Stage Release Artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path staging
+          if (Test-Path "build\UTALISYNTH_artefacts\Release\VST3\UTALISYNTH.vst3") {
+              Copy-Item -Recurse -Force "build\UTALISYNTH_artefacts\Release\VST3\UTALISYNTH.vst3" -Destination staging\
+          } elseif (Test-Path "build\UTALISYNTH_artefacts\VST3\UTALISYNTH.vst3") {
+              Copy-Item -Recurse -Force "build\UTALISYNTH_artefacts\VST3\UTALISYNTH.vst3" -Destination staging\
+          }
+          if (Test-Path "build\UTALISYNTH_artefacts\Release\Standalone\UTALISYNTH.exe") {
+              Copy-Item -Force "build\UTALISYNTH_artefacts\Release\Standalone\UTALISYNTH.exe" -Destination staging\
+          } elseif (Test-Path "build\UTALISYNTH_artefacts\Standalone\UTALISYNTH.exe") {
+              Copy-Item -Force "build\UTALISYNTH_artefacts\Standalone\UTALISYNTH.exe" -Destination staging\
+          }
+          Compress-Archive -Path "staging\*" -DestinationPath "${{ matrix.zip_name }}" -Force
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.zip_name }}
+          if-no-files-found: error
+
+  release:
+    name: Publish Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: UTALI-UtaliSynth-macOS
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: UTALI-UtaliSynth-Windows
+
+      - name: Upload Release Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ github.ref_name }} --title "UTALISYNTH ${{ github.ref_name }}" --notes "Automated release ${{ github.ref_name }}" || true
+          gh release upload ${{ github.ref_name }} \
+            UTALI-UtaliSynth-macOS.zip \
+            UTALI-UtaliSynth-Windows.zip \
+            --clobber

@@ -59,6 +59,9 @@ private:
     } params;
 
     juce::SmoothedValue<float> smoothedDrive;
+    juce::SmoothedValue<float> smoothedLag;
+    juce::SmoothedValue<float> smoothedWobble;
+    juce::SmoothedValue<float> smoothedMix;
     juce::dsp::FirstOrderTPTFilter<float> dcBlocker;
     std::array<ADAAProcessor, 2> adaaProcessors;
 

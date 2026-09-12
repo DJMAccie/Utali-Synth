@@ -64,20 +64,20 @@ void SynthVoice::prepareToPlay(double sampleRate, int samplesPerBlock, int) {
     adsr.setSampleRate(sampleRate);
 
     smoothedCutoff.reset(sampleRate, 0.02);
-    smoothedSubMix.reset(sampleRate, 0.05);
+    smoothedSubMix.reset(sampleRate, 0.02);
     smoothedResonance.reset(sampleRate, 0.02);
     smoothedPanLeft.reset(sampleRate, 0.02);
     smoothedPanRight.reset(sampleRate, 0.02);
 
     fastFadeDecrement = 1.0f / static_cast<float>(std::max(1.0, 0.005 * sampleRate));
-    tempBuffer.setSize(1, std::max(samplesPerBlock, 2048));
+    tempBuffer.setSize(1, std::max(samplesPerBlock * 2, 8192));
 }
 
 void SynthVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer, int startSample, int numSamples) {
     if (!isVoiceActive()) return;
 
-    if (tempBuffer.getNumSamples() < numSamples)
-        tempBuffer.setSize(1, numSamples, false, false, true);
+    jassert(numSamples <= tempBuffer.getNumSamples());
+    numSamples = std::min(numSamples, tempBuffer.getNumSamples());
 
     tempBuffer.clear(0, 0, numSamples);
 

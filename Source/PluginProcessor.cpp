@@ -50,6 +50,7 @@ UTALISYNTHAudioProcessor::UTALISYNTHAudioProcessor()
 UTALISYNTHAudioProcessor::~UTALISYNTHAudioProcessor() {}
 
 void UTALISYNTHAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock) {
+    setLatencySamples(0);
     mySynth.setCurrentPlaybackSampleRate(sampleRate);
     juce::dsp::ProcessSpec spec{ sampleRate, static_cast<juce::uint32>(samplesPerBlock), static_cast<juce::uint32>(getTotalNumOutputChannels()) };
     
@@ -66,7 +67,10 @@ void UTALISYNTHAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
     for (auto& adaa : adaaProcessors)
         adaa.reset();
     
-    smoothedDrive.reset(sampleRate, 0.015);
+    smoothedDrive.reset(sampleRate, 0.02);
+    smoothedLag.reset(sampleRate, 0.02);
+    smoothedWobble.reset(sampleRate, 0.02);
+    smoothedMix.reset(sampleRate, 0.02);
 }
 
 void UTALISYNTHAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) {
@@ -95,10 +99,18 @@ void UTALISYNTHAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
     keyboardState.processNextMidiBuffer(midiMessages, 0, numSamples, true);
     mySynth.renderNextBlock(buffer, midiMessages, 0, numSamples);
 
-    // 3. Process chorus directly
-    chorus.setCentreDelay(juce::jlimit(1.0f, 100.0f, params.lag->load()));
-    chorus.setDepth(juce::jlimit(0.0f, 1.0f, params.wobble->load()));
-    chorus.setMix(juce::jlimit(0.0f, 1.0f, params.mix->load()));
+    // 3. Process chorus with smoothed parameters
+    smoothedLag.setTargetValue(juce::jlimit(1.0f, 100.0f, params.lag->load()));
+    smoothedWobble.setTargetValue(juce::jlimit(0.0f, 1.0f, params.wobble->load()));
+    smoothedMix.setTargetValue(juce::jlimit(0.0f, 1.0f, params.mix->load()));
+
+    smoothedLag.skip(numSamples);
+    smoothedWobble.skip(numSamples);
+    smoothedMix.skip(numSamples);
+
+    chorus.setCentreDelay(smoothedLag.getCurrentValue());
+    chorus.setDepth(smoothedWobble.getCurrentValue());
+    chorus.setMix(smoothedMix.getCurrentValue());
 
     juce::dsp::AudioBlock<float> chorusBlock(buffer);
     chorus.process(juce::dsp::ProcessContextReplacing<float>(chorusBlock));
@@ -144,7 +156,7 @@ const juce::String UTALISYNTHAudioProcessor::getName() const {
 bool UTALISYNTHAudioProcessor::acceptsMidi() const { return true; }
 bool UTALISYNTHAudioProcessor::producesMidi() const { return false; }
 bool UTALISYNTHAudioProcessor::isMidiEffect() const { return false; }
-double UTALISYNTHAudioProcessor::getTailLengthSeconds() const { return 0.0; }
+double UTALISYNTHAudioProcessor::getTailLengthSeconds() const { return 5.0; }
 int UTALISYNTHAudioProcessor::getNumPrograms() { return 1; }
 int UTALISYNTHAudioProcessor::getCurrentProgram() { return 0; }
 void UTALISYNTHAudioProcessor::setCurrentProgram(int) {}

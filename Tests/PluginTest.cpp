@@ -2,8 +2,14 @@
 #include <JuceHeader.h>
 #include "../Source/PluginProcessor.h"
 #include <iostream>
-#include <cassert>
 #include <cmath>
+
+#define UTALI_TEST_ASSERT(cond) do { \
+    if (!(cond)) { \
+        std::cerr << "Assertion failed at line " << __LINE__ << ": " #cond << std::endl; \
+        std::abort(); \
+    } \
+} while (0)
 
 static void testAudioRenderingAndSanity() {
     std::cout << "[Test 1] Initializing UTALISYNTH processor..." << std::endl;
@@ -25,16 +31,16 @@ static void testAudioRenderingAndSanity() {
     float rmsL = buffer.getRMSLevel(0, 0, blockSize);
     float rmsR = buffer.getRMSLevel(1, 0, blockSize);
     std::cout << "  Block 1 RMS L: " << rmsL << ", R: " << rmsR << std::endl;
-    assert(rmsL > 0.0001f && "Audio should be non-silent on Note On");
-    assert(rmsR > 0.0001f && "Audio should be non-silent on Note On");
+    UTALI_TEST_ASSERT(rmsL > 0.0001f);
+    UTALI_TEST_ASSERT(rmsR > 0.0001f);
 
     // Check for NaNs and out-of-bounds samples
     for (int ch = 0; ch < 2; ++ch) {
         const float* data = buffer.getReadPointer(ch);
         for (int i = 0; i < blockSize; ++i) {
-            assert(!std::isnan(data[i]) && "Buffer contains NaN!");
-            assert(!std::isinf(data[i]) && "Buffer contains Inf!");
-            assert(std::abs(data[i]) <= 1.0f && "Buffer exceeds bounds!");
+            UTALI_TEST_ASSERT(!std::isnan(data[i]));
+            UTALI_TEST_ASSERT(!std::isinf(data[i]));
+            UTALI_TEST_ASSERT(std::abs(data[i]) <= 1.0f);
         }
     }
 
@@ -45,8 +51,8 @@ static void testAudioRenderingAndSanity() {
         for (int ch = 0; ch < 2; ++ch) {
             const float* data = buffer.getReadPointer(ch);
             for (int i = 0; i < blockSize; ++i) {
-                assert(!std::isnan(data[i]));
-                assert(!std::isinf(data[i]));
+                UTALI_TEST_ASSERT(!std::isnan(data[i]));
+                UTALI_TEST_ASSERT(!std::isinf(data[i]));
             }
         }
     }
@@ -64,7 +70,7 @@ static void testAudioRenderingAndSanity() {
     }
     float finalRms = buffer.getRMSLevel(0, 0, blockSize);
     std::cout << "  After release RMS: " << finalRms << std::endl;
-    assert(finalRms < 0.001f && "Synth should fade to silence after release");
+    UTALI_TEST_ASSERT(finalRms < 0.001f);
     std::cout << "  -> PASSED Audio Rendering & Sanity Test" << std::endl;
 }
 
@@ -104,7 +110,7 @@ static void testVoiceStealingDiscontinuity() {
         }
     }
     std::cout << "  Max sample-to-sample delta during voice stealing: " << maxStep << std::endl;
-    assert(maxStep < 0.5f && "Discontinuity too large during voice stealing!");
+    UTALI_TEST_ASSERT(maxStep < 0.5f);
     std::cout << "  -> PASSED Voice Stealing Test" << std::endl;
 }
 
@@ -128,8 +134,8 @@ static void testSampleRatesAndBlockSizes() {
             for (int ch = 0; ch < 2; ++ch) {
                 const float* data = buffer.getReadPointer(ch);
                 for (int i = 0; i < bs; ++i) {
-                    assert(!std::isnan(data[i]));
-                    assert(!std::isinf(data[i]));
+                    UTALI_TEST_ASSERT(!std::isnan(data[i]));
+                    UTALI_TEST_ASSERT(!std::isinf(data[i]));
                 }
             }
         }
@@ -156,13 +162,13 @@ static void testWaveformsAndADAA() {
         processor.processBlock(buffer, midi);
 
         float rms = buffer.getRMSLevel(0, 0, 512);
-        assert(rms > 0.01f && "Waveform should produce audio");
+        UTALI_TEST_ASSERT(rms > 0.01f);
         for (int ch = 0; ch < 2; ++ch) {
             const float* data = buffer.getReadPointer(ch);
             for (int i = 0; i < 512; ++i) {
-                assert(!std::isnan(data[i]));
-                assert(!std::isinf(data[i]));
-                assert(std::abs(data[i]) <= 1.0f);
+                UTALI_TEST_ASSERT(!std::isnan(data[i]));
+                UTALI_TEST_ASSERT(!std::isinf(data[i]));
+                UTALI_TEST_ASSERT(std::abs(data[i]) <= 1.0f);
             }
         }
     }
@@ -193,7 +199,7 @@ static void testSustainSensitivity() {
     }
     float lowSustainRms = buffer.getRMSLevel(0, 0, 512);
     std::cout << "  At 1% sustain, RMS level: " << lowSustainRms << std::endl;
-    assert(lowSustainRms < 0.015f && "1% sustain is still too loud!");
+    UTALI_TEST_ASSERT(lowSustainRms < 0.015f);
 
     // Test at 100% sustain: should be full volume
     susParam->setValueNotifyingHost(1.0f);
@@ -203,7 +209,7 @@ static void testSustainSensitivity() {
     }
     float highSustainRms = buffer.getRMSLevel(0, 0, 512);
     std::cout << "  At 100% sustain, RMS level: " << highSustainRms << std::endl;
-    assert(highSustainRms > 0.05f && "100% sustain should be full volume");
+    UTALI_TEST_ASSERT(highSustainRms > 0.05f);
     std::cout << "  -> PASSED Sustain Sensitivity Test" << std::endl;
 }
 
@@ -219,7 +225,7 @@ static void testRenderUISnapshot() {
     juce::FileOutputStream fos(outputFile);
     juce::PNGImageFormat png;
     bool success = png.writeImageToStream(snapshot, fos);
-    assert(success && "Failed to render UI snapshot");
+    UTALI_TEST_ASSERT(success);
     std::cout << "  -> PASSED UI Snapshot Generated: /tmp/utalisynth_ui_preview.png" << std::endl;
 }
 
